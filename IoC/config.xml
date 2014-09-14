@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <root>
 	<bean id="engine" class="week7.reflection.Engine">
 		<property name="power" val = "200"/>
