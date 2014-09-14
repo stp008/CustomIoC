@@ -1,6 +1,7 @@
 package week7.reflection.di;
 
 
+import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -91,24 +92,32 @@ public class Context {
                 // ищем поле с таким именен внутри класса
                 // учитывая приватные
                 Field field = clazz.getDeclaredField(name);
+                String methodName = "set" + String.valueOf(name.charAt(0)).toUpperCase() + name.substring(1);
+                Method method = clazz.getDeclaredMethod(methodName, field.getType());
+                /*Method[] methods = clazz.getMethods();
+                for (Method met : methods) {
+                	System.out.println(met.getName());
+                }*/
                 if (field == null) {
                     throw new InvalidConfigurationException("Failed to set field [" + name + "] for class " + clazz.getName());
                 }
                 Property prop = bean.getProperties().get(name);
                 // Чтобы изменять приватные поля
-                field.setAccessible(true);
+                //field.setAccessible(true);
 
                 // храним тип данных
                 Type type = field.getType();
 
                 switch (prop.getType()) {
                     case VALUE:
-                        field.set(ob, convert(type.getTypeName(), prop.getValue()));
+                        //field.set(ob, convert(type.getTypeName(), prop.getValue()));
+                    	method.invoke(ob, convert(type.getTypeName(), prop.getValue()));
                         break;
                     case REF:
                         String refName = prop.getValue();
                         if (objectsById.containsKey(refName)) {
-                            field.set(ob, objectsById.get(refName));
+                            //field.set(ob, objectsById.get(refName));
+                            method.invoke(ob, objectsById.get(refName));
                         } else {
                             throw new InvalidConfigurationException("Failed to instantiate bean. Field " + name);
                         }
@@ -198,14 +207,17 @@ public class Context {
         for (Field field : fields) {
             if (field.isAnnotationPresent(Auto.class)) {
                 Auto auto = field.getAnnotation(Auto.class);
+                String methodName = "set" + String.valueOf(field.getName().charAt(0)).toUpperCase() + field.getName().substring(1);
+                Method method = clazz.getDeclaredMethod(methodName, field.getType());
                 log.info("ANNOTATION {}.{} TYPE {} auto isRequired: {}", clazz.getName(), field.getName(), field.getType().getName(), auto.isRequired());
 
                 if (auto.isRequired() && !objectsByClass.containsKey(field.getType().getName())) {
                     throw new InvalidConfigurationException("Failed to wire @Auto " + field.getType() + " : " + field.getName());
                 } else if (objectsByClass.containsKey(field.getType().getName())) {
                     Object obj = objectsByClass.get(field.getType().getName());
-                    field.setAccessible(true);
-                    field.set(instance, obj);
+                    //field.setAccessible(true);
+                    method.invoke(instance, obj);
+                    //field.set(instance, obj);
                 }
             }
         }
